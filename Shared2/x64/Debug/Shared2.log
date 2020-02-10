@@ -1,0 +1,8 @@
+﻿  ComLib.cpp
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.h(69,31): warning C4293:  '<<': shift count negative or too big, undefined behavior
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.cpp(5,24): warning C4267:  '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.cpp(14,17): warning C4267:  'argument': conversion from 'size_t' to 'DWORD', possible loss of data
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.cpp(57,19): warning C4267:  '-=': conversion from 'size_t' to 'int', possible loss of data
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.cpp(66,26): warning C4267:  '+=': conversion from 'size_t' to 'int', possible loss of data
+D:\Year 3\LP1\Level Editor\Shared2\Shared2\ComLib.cpp(100,27): warning C4267:  '+=': conversion from 'size_t' to 'int', possible loss of data
+  Shared2.vcxproj -> D:\Year 3\LP1\Level Editor\Shared2\x64\Debug\Shared.exe
