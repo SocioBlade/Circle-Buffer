@@ -2,15 +2,16 @@
 
 ComLib::ComLib(const std::string& secret, const size_t& buffSize, TYPE type)
 {
-	this->mSize = buffSize;
-	this->memLeft = mSize;
+	this->mSize = buffSize * 2;
+
+	size_t mem = mSize + (3 * (sizeof(size_t)));
 
 	hFileMap = CreateFileMapping(
 		INVALID_HANDLE_VALUE,
 		NULL,
 		PAGE_READWRITE,
 		(DWORD)0,
-		buffSize,
+		mem,
 		secret.c_str());
 	
 	cout << "filemap created" << endl;
@@ -44,26 +45,26 @@ ComLib::ComLib(const std::string& secret, const size_t& buffSize, TYPE type)
 
 bool ComLib::send(const void* msg, const size_t length)
 { 
- 	int8_t msgStatus = 0;
-	bool sent = false;
-	prodCheck = false;
-	bool restart = false;
+ 	//int8_t msgStatus = 0;
+	//bool sent = false;
+	//prodCheck = false;
+	//bool restart = false;
 
 	while (checkMemStatus(length) != true)
 	{
 		memcpy(&headOffset, head, sizeof(int));
 	}
 	
-	memLeft -= length;
-	// Re:format the couts to be both cleaner and make more sense
-	memcpy(mData, &length, sizeof(length));
 
-	mData = static_cast<char*>(mData) + sizeof(size_t);
+	// Re:format the couts to be both cleaner and make more sense
+	memcpy(mData, &length, sizeof(int));
+
+	mData = static_cast<char*>(mData) + sizeof(int);
 	memcpy(mData, msg, length);
 
 	mData = static_cast<char*>(mData) + length;
 	// Update head
-	headOffset += length + 2;
+	headOffset += length + sizeof(int);
 	memcpy(head, &headOffset, sizeof(int));
 
 	std::cout << "HEAD: " << headOffset << std::endl;
@@ -73,22 +74,20 @@ bool ComLib::send(const void* msg, const size_t length)
 
 bool ComLib::recv(char* msg, size_t& length)
 {
-	size_t testLen;
+	int testLen;
 	int8_t msgStatus = 0;
 	consumCheck = false;
-
-	memcpy(&testLen, mData, sizeof(size_t));
 	
+	memcpy(&testLen, mData, sizeof(int));
 	//Check if the consumer should read or not
-	while (checkReadStatus(testLen) != true)
+	while (checkReadStatus() != true)
 	{
-		memcpy(&testLen, mData, sizeof(size_t));
+		memcpy(&testLen, mData, sizeof(int));
 	}
-
-	memcpy(&testLen, mData, sizeof(size_t));
-
 	
-	mData = static_cast<char*>(mData) + (sizeof(size_t)); 
+	memcpy(&testLen, mData, sizeof(int));
+
+	mData = static_cast<char*>(mData) + (sizeof(int)); 
 
 	memcpy(msg, mData, length);
 	cout << msg << endl;
@@ -97,7 +96,7 @@ bool ComLib::recv(char* msg, size_t& length)
 	mData = static_cast<char*>(mData) + testLen;
 
 
-	tailOffset += testLen + 2;
+	tailOffset += testLen + sizeof(int);
 	memcpy(tail, &tailOffset, sizeof(int));
 
 	std::cout << "HEAD: " << headOffset << std::endl;
@@ -111,20 +110,22 @@ size_t ComLib::nextSize()
 }
 
 
-bool ComLib::checkReadStatus(size_t &length)
+bool ComLib::checkReadStatus()
 {
+	int m_length;
 	bool read = false;
-
+	
 	memcpy(&headOffset, head, sizeof(int)); //<--- Update headOffset
 	memcpy(&tailOffset, tail, sizeof(int));
+	memcpy(&m_length, mData, sizeof(m_length));
 
 	if (tailOffset != headOffset)
 	{
-		if (length == 0)
+		if (m_length == 0)
 		{
-			memcpy(&length, mData, sizeof(length));
+			memcpy(&m_length, mData, sizeof(m_length));
 		}
-		else if (length != SIZE_MAX)
+		else if (m_length != -1)
 		{
 			read = true;
 		}
@@ -142,6 +143,9 @@ bool ComLib::checkReadStatus(size_t &length)
 
 			tailOffset = 0;
 			memcpy(tail, &tailOffset, sizeof(int)); //<--- Is this needed?
+
+			memcpy(&m_length, mData, sizeof(m_length));
+
 			read = true;
 			std::cout << "=======LOOOOOOP========" << std::endl;
 		}
@@ -154,6 +158,7 @@ bool ComLib::checkMemStatus(size_t length)
 	bool isMemLeft = false;
 	int mCase;
 
+	//REFRESH UPDATE
 	memcpy(&headOffset, head, sizeof(int));
 	memcpy(&tailOffset, tail, sizeof(int));
 
@@ -164,7 +169,8 @@ bool ComLib::checkMemStatus(size_t length)
 
 	if (mCase == 0)
 	{
-		size_t totLength = length + 2 * sizeof(size_t); //<--- Possible issue
+		int memLeft = mSize - headOffset;
+		int totLength = length + (2 * sizeof(int)); //<--- Possible issue
 		
 		if (memLeft > totLength)
 		{
@@ -173,7 +179,7 @@ bool ComLib::checkMemStatus(size_t length)
 		else
 		{
 			//Memory left is not enough
-			size_t newLength = -1;
+			int newLength = -1;
 			memcpy(mData, &newLength, sizeof(newLength));
 
 			//This while loop ensures that consumer must have started reading before
@@ -183,8 +189,11 @@ bool ComLib::checkMemStatus(size_t length)
 				memcpy(&tailOffset, tail, sizeof(int)); //<--- Updates the tailOffset Variable
 			}
 
+			mData = static_cast<char*>(mData) + sizeof(int);
+
 			mData = mDataStartPos; //<--- Reset mData position in memory
-			memLeft = mSize; //<--- Reset memLeft to allow for further checks
+			//memLeft = mSize; //<--- Reset memLeft to allow for further checks
+			mCase = 1;
 			headOffset = 0; //<-- Reset headOffset
 			memcpy(head, &headOffset, sizeof(int)); //<-- Write it to memeory
 			
@@ -194,13 +203,13 @@ bool ComLib::checkMemStatus(size_t length)
 			std::cout << "=======LOOOOOOP========" << std::endl;
 		}
 	}
-	else if (mCase == 1)
+	if (mCase == 1)
 	{
 		int differnce = tailOffset - headOffset;
 
 		// Only return true if producer has looped and the difference between 
 		// head and tail allow for a new message
-		if (prodLoop == 1 && differnce > length + 2 + sizeof(size_t))
+		if (prodLoop == 1 && differnce > length + (2 * sizeof(int)))
 			isMemLeft = true; 
 	} 
 

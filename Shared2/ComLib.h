@@ -47,7 +47,7 @@ public:
 	// the function will also call recieveLoopCheck()	  //
 	// to see if a loop will be necessary				  //
 	//====================================================//
-	bool checkReadStatus(size_t &length);
+	bool checkReadStatus();
 
 	//====================================================//
 	// This funcion handles the different cases that will //
@@ -66,7 +66,7 @@ private:
 	void* mDataStartPos;
 
 	bool exists = false;
-	unsigned int mSize = 1 << 100;
+	unsigned int mSize;
 	int memLeft;
 	char* msg;
 

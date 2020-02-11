@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 
 		char* randomMsg;
 
-		randomMsg = new char[(buffsize * KILOBYTE) / 2]; // message size can at most be the half of total memory size. 
+		randomMsg = new char[((buffsize * KILOBYTE) / 2) - 2 * sizeof(int)]; // message size can at most be the half of total memory size. 
 
 		msgPtr = randomMsg;
 		int messageSize;
@@ -131,7 +131,7 @@ void gen_random(char* s, const int len)
 
 int randomizeSize()
 {
-	int	size = rand() % (KILOBYTE/2) + 1;
+	int	size = rand() % (KILOBYTE) + 1;
 	//Make it so the size is always a multiple of 64
 	cout << "This is the value of size before modulus: " << size << "." << endl;
 	
