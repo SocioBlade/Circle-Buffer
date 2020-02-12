@@ -49,6 +49,7 @@ int main(int argc, char* argv[])
 
 			for (int i = 0; i < nrOfMessages; i++)
 			{
+				//Comment
 				Sleep(delay);
 
 				if (secondArg.compare("random") == 0)
