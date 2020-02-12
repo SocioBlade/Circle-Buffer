@@ -2,7 +2,7 @@
 
 ComLib::ComLib(const std::string& secret, const size_t& buffSize, TYPE type)
 {
-	this->mSize = buffSize * 2;
+	this->mSize = buffSize;
 
 	size_t mem = mSize + (3 * (sizeof(size_t)));
 
@@ -41,14 +41,17 @@ ComLib::ComLib(const std::string& secret, const size_t& buffSize, TYPE type)
 	
 	prodLoopPtr = mDataStartPos;
 	prodLoopPtr = static_cast<char*>(prodLoopPtr) + (mSize + (sizeof(int) * 2));
+	memcpy(&prodLoop, prodLoopPtr, sizeof(int));
+
+	if (prodLoop == NULL)
+	{
+		prodLoop = 0;
+		memcpy(prodLoopPtr, &prodLoop, sizeof(int));
+	}
 }
 
 bool ComLib::send(const void* msg, const size_t length)
 { 
- 	//int8_t msgStatus = 0;
-	//bool sent = false;
-	//prodCheck = false;
-	//bool restart = false;
 
 	while (checkMemStatus(length) != true)
 	{
@@ -89,9 +92,8 @@ bool ComLib::recv(char* msg, size_t& length)
 
 	mData = static_cast<char*>(mData) + (sizeof(int)); 
 
-	memcpy(msg, mData, length);
-	cout << msg << endl;
-
+	memcpy(msg, mData, testLen);
+	std::cout << msg << std::endl;
 
 	mData = static_cast<char*>(mData) + testLen;
 
@@ -172,7 +174,9 @@ bool ComLib::checkMemStatus(size_t length)
 		int memLeft = mSize - headOffset;
 		int totLength = length + (2 * sizeof(int)); //<--- Possible issue
 		
-		if (memLeft > totLength)
+		memcpy(&prodLoop, prodLoopPtr, sizeof(int));
+
+		if (prodLoop == 0 && memLeft > totLength)
 		{
 			isMemLeft = true;
 		}
@@ -209,7 +213,7 @@ bool ComLib::checkMemStatus(size_t length)
 
 		// Only return true if producer has looped and the difference between 
 		// head and tail allow for a new message
-		if (prodLoop == 1 && differnce > length + (2 * sizeof(int)))
+		if (differnce > length + (2 * sizeof(int)))
 			isMemLeft = true; 
 	} 
 

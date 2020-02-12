@@ -9,11 +9,11 @@
 #pragma comment(lib, "user32.lib")
 using namespace std;
 
-#define KILOBYTE 1024
+#define MEGABYTE 1024
 
 bool isDigits(const string& str);
 void gen_random(char* s, const int len);
-int randomizeSize();
+int randomizeSize(const size_t buffsize);
 
 
 int main(int argc, char* argv[])
@@ -38,44 +38,46 @@ int main(int argc, char* argv[])
 
 		char* randomMsg;
 
-		randomMsg = new char[((buffsize * KILOBYTE) / 2) - 2 * sizeof(int)]; // message size can at most be the half of total memory size. 
+		randomMsg = new char[((buffsize * MEGABYTE) / 2) - 2 * sizeof(int)]; // message size can at most be the half of total memory size. 
 
 		msgPtr = randomMsg;
 		int messageSize;
 
 		if (firstArg.compare("producer") == 0) //If the program should act as producer, create filemap
 		{
-			cout << "producer" << endl;
-
-			cout << "Creating comlib" << endl;
-			ComLib comLib(secret, buffsize * KILOBYTE, ComLib::PRODUCER);
+			ComLib comLib(secret, buffsize * MEGABYTE, ComLib::PRODUCER);
 
 			for (int i = 0; i < nrOfMessages; i++)
 			{
 				Sleep(delay);
-				cout << "Inside for loop" << endl;
-				messageSize = randomizeSize();
-				cout << "message size in bytes: " << sizeof(messageSize) << endl;
-				gen_random(randomMsg, messageSize);
-				cout << "message size after gen_random: " << messageSize << endl;
-				
-				//Error handling for now to avoid crashes and memory issues:
-				if (messageSize <= 512)
-					comLib.send(randomMsg, messageSize);
-				else
-					cout << "Error: MessageSize variable exceed the limit of 512" << endl; //DEBUGGING
 
+				if (secondArg.compare("random") == 0)
+				{
+					messageSize = randomizeSize(buffsize);
+					gen_random(randomMsg, messageSize);
+					
+
+					comLib.send(randomMsg, messageSize);
+
+				} 
+				else if (isDigits(secondArg))
+				{
+					int fixedSize = *argv[5];
+					gen_random(randomMsg, fixedSize);
+
+					comLib.send(randomMsg, fixedSize);
+				}
+
+				//Print the message and the message number, Remove before python test 
 				std::cout << randomMsg << std::endl;
 				std::cout << "msg number: [" << i + 1 << "]" << std::endl;
 			}
-			system("pause");
 	
 		}
 		else if (firstArg.compare("consumer") == 0)
 		{
-			cout << "consumer" << endl;
-			size_t readMsgSize = 1024/2;
-			ComLib comLib(secret, buffsize * KILOBYTE, ComLib::CONSUMER);
+			size_t readMsgSize = (buffsize * MEGABYTE / 2);
+			ComLib comLib(secret, buffsize * MEGABYTE, ComLib::CONSUMER);
 			for(int i = 0; i < nrOfMessages; i++)
 			{ 
 				Sleep(delay);
@@ -86,17 +88,7 @@ int main(int argc, char* argv[])
 		else
 			std::cout << "ERROR: FIRST INPUT IS NOT \"producer\" OR \"consumer\"" << std::endl;;
 
-		cout << "delay: " << argv[2] << endl;
-		cout << "memorySize: " << argv[3] << endl;
-		cout << "mumMessages: " << argv[4] << endl;
 
-
-		if (secondArg.compare("random") == 0)
-			cout << "random" << endl;
-		else if (isDigits(secondArg))
-			cout << argv[5] << endl;
-		else
-			cout << "ERROR: LAST INPUT IS NOT \"random\" OR EXCLUSIVELY DIGITS" << std::endl;
 	}
 	else
 	{
@@ -129,14 +121,13 @@ void gen_random(char* s, const int len)
 	s[len - 1] = 0;
 }
 
-int randomizeSize()
+int randomizeSize(const size_t buffsize)
 {
-	int	size = rand() % (KILOBYTE) + 1;
+	int	size = rand() % (buffsize * MEGABYTE) + 1;
 	//Make it so the size is always a multiple of 64
-	cout << "This is the value of size before modulus: " << size << "." << endl;
 	
-	if (size > KILOBYTE / 2)
-		size = KILOBYTE / 2;
+	if (size > (buffsize * MEGABYTE / 2))
+		size = (buffsize * MEGABYTE / 2);
 
 	if (size >= 64)
 	{
@@ -147,6 +138,5 @@ int randomizeSize()
 	{
 		size = 64;
 	}
-	cout << "This is the value of size after modulus: " << size << "." << endl;
 	return size;
 }
