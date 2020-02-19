@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 		string secondArg = argv[5];				// Random or set mesgSize
 		
 		const string secret = "ComLibSecret";
+
 		char* msgPtr = nullptr;
 
 
@@ -38,7 +39,7 @@ int main(int argc, char* argv[])
 
 		char* randomMsg;
 
-		randomMsg = new char[((buffsize * MEGABYTE) / 2) - 2 * sizeof(int)]; // message size can at most be the half of total memory size. 
+		randomMsg = new char[(buffsize * MEGABYTE)]; // message size can at most be the half of total memory size. 
 
 		msgPtr = randomMsg;
 		int messageSize;
@@ -46,6 +47,8 @@ int main(int argc, char* argv[])
 		if (firstArg.compare("producer") == 0) //If the program should act as producer, create filemap
 		{
 			ComLib comLib(secret, buffsize * MEGABYTE, ComLib::PRODUCER);
+
+			
 
 			for (int i = 0; i < nrOfMessages; i++)
 			{
@@ -127,8 +130,8 @@ int randomizeSize(const size_t buffsize)
 	int	size = rand() % (buffsize * MEGABYTE) + 1;
 	//Make it so the size is always a multiple of 64
 	
-	if (size > (buffsize * MEGABYTE / 2))
-		size = (buffsize * MEGABYTE / 2);
+	if (size > (buffsize * MEGABYTE / 2) - (2 * sizeof(int)))
+		size = (buffsize * MEGABYTE / 2) - (2 * sizeof(int));
 
 	if (size >= 64)
 	{
